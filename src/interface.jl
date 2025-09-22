@@ -10,41 +10,57 @@ physical - optional (defaults to true)
         field (False).
 """
 rdsignal(header::Header) = rdsignal(header::Header, true)
-function rdsignal(header::Header, physical::Bool)
-    sig_info = signalspecline(header)
-    fnames = filename(header)
-    uniquefname = unique(fnames)
-    #TODO: fix for multi file signals
-    @assert length(uniquefname) == 1
-    uniquefname = uniquefname[1]
-    #TODO: verify whether more than 1 format can live in a single file
-    fmt = format(header) #FIXME:abstract out
-    length(unique(fmt)) > 1 && error("multi format not implemented $(fmt)")
-    extension = get_extension_symbol(uniquefname)
 
-    uniquespf = samples_per_frame(header) |> unique
-    uniform = length(uniquespf) == 1 & uniquespf[1] == 1
-    !uniform && error("non-unity frame sizes not supported")
-    if extension === :wfdb
-        # -    samples = read_binary(pop!(fnames), header, header.parentdir, signalspecline(header)[1].format)
-        open(joinpath(parentdir(header), uniquefname)) do io
-            samples = read_binary(io, header, fmt[1])
-        end
-    elseif extension === :matlab
-        fname = joinpath(header.parentdir, uniquefname)
-        samples = matread(fname) |> values |> collect
-        if length(samples) > 1
-            error("more than one matrix in .mat file")
-        end
-        samples = samples[1]
-    end
+function rdsignal(header::Header, physical::Bool)
+    dir = parentdir(header)
+
+    #samples per frame is part of the spec line and samples per signal is part of
+    #the Header line
+    specline = signalspecline(header)
+    n_samples = sum(samples_per_frame(specline) * samples_per_signal(header))
+
+    @info n_samples
+
+    samples = _process(dir, signalspecline(header),n_samples)
+
     _checksum = checksum(samples, header)
     if physical
-        samples = Float16.(samples)
+        samples = Float16.(samples) #TODO: change to convert and check out type of checksum...
         dac!(samples, header)
     end
     return _checksum, reshape(samples, nsignals(header), :)
 end
+
+function _process(dir::String, v::SingleSpecVector,n_samples::UInt64)::Vector{Int32}
+    #TODO: validation step for format. There shouldn't be multi-format in a single file
+    fmt = format(v)[1]
+    fname = filename(v)[1]
+    fname = joinpath(dir, fname)
+    extension = get_extension_symbol(fname)
+
+    uniquespf = samples_per_frame(v) |> unique
+    uniform = length(uniquespf) == 1 & uniquespf[1] == 1
+    !uniform && error("non-unity frame sizes not supported")
+
+    extension == :matlab && return read_matlab(fname)
+
+    if extension == :wfdb
+        io = open(fname)
+        samples = read_binary(io,v, n_samples, fmt)
+        close(io)
+        return samples
+    end
+end
+
+function read_matlab(fname::String)::Vector{Int32}
+
+    samples = matread(fname) |> values |> collect
+    if length(samples) > 1
+        error("more than one matrix in .mat file")
+    end
+    return convert(Vector{Int32},vec(samples[1]))
+end
+
 
 """
     wsignal(header::Header, signal::Vector{Int32})
@@ -63,7 +79,7 @@ function wsignal(header::Header, signal::Vector{Int32})
     end
     fnames = filename(header)
     uniquefname = unique(fnames)
-    if len(uniquefname) > 1
+    if length(uniquefname) > 1
         error("multi-file writers not supported")
     end
     uniquefname = uniquefname[1]

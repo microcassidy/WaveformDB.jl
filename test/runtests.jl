@@ -21,6 +21,7 @@ read_target_record(record, T::Type{<:Real}) = read_delimited(target_record(recor
 function read_target_record(record, delimiter, T::Type{<:Real})
     read_delimited(target_record(record), delimiter, T)
 end
+const ty = [format8 , format16 , format24 , format32 , format61 , format80 , format160 , format212 , format310 , format311 ]
 
 const lines_mapping = Dict([
     :format8 => 1,
@@ -49,8 +50,9 @@ const spec_lines = [
     "binformats.d9 32 200/mV 32 0 -2147483638 19035 0 sig 9, fmt 32",
 ]
 const recordline = WaveformDB.parse_record_line(bindata_recordline)
-
-function H(sl)
+using WaveformDB:SingleSpecVector, MultiSpecVector,AbstractStorageFormat,SignalSpecLine
+# const HT = Vector{SignalSpecLine{T}}
+function H(sl::Vector{SignalSpecLine})
     WaveformDB.Header(
         recordline[:record_name],
         recordline[:number_of_segments],

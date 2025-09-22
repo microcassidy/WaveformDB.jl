@@ -1,11 +1,11 @@
-using WaveformDB: write_binary
+using WaveformDB: write_binary, parse_signal_spec_line
 function setup_writer_tests(fmts)
     D = Dict()
 
     for fmt in fmts
         ln = lines_mapping[Symbol(fmt)]
 
-        spec_line = [WaveformDB.parse_signal_spec_line(spec_lines[ln])]
+        spec_line = Vector{SignalSpecLine}([parse_signal_spec_line(spec_lines[ln])])
         D[fmt] = H(spec_line)
     end
 
@@ -29,9 +29,9 @@ end
 
 @testset "writers" begin
     mt = methods(WaveformDB.read_binary)
-    fmts = [m.sig.types[end] for m in mt] |> filter(x -> x !== WaveformDB.WfdbFormat)
-    fmts = [t.parameters[1] for t in fmts]
-    writertest = setup_writer_tests(fmts)
+    # fmts = [m.sig.types[end] for m in mt] |> filter(x -> x !== WaveformDB.WfdbFormat)
+    # fmts = [t.parameters[1] for t in fmts]
+    writertest = setup_writer_tests(ty)
     for fmt in fmts
         @testset "$fmt" begin
             writertest(fmt)

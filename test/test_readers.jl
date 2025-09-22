@@ -72,7 +72,8 @@ end
 
 function test_T(T::Type{U}, target::Matrix{Int32}) where {U<:AbstractStorageFormat}
     idx = lines_mapping[Symbol(T)]
-    header = H([WaveformDB.parse_signal_spec_line(spec_lines[idx])])
+    v = Vector{SignalSpecLine}([WaveformDB.parse_signal_spec_line(spec_lines[idx])])
+    header = H(v)
     _checksum, signal = rdsignal(header, false)
     t = @view target[idx, :]
     signalv = @view signal[1, :]
@@ -89,8 +90,8 @@ end
     target = opengzip!(io, identity)
 
     #filter to the types with a formatxx subtype
-    ty = [m.sig.types[end] for m in mt] |> filter(x->x !== WaveformDB.WfdbFormat)
-    ty = [t.parameters[1] for t in ty]
+
+    # ty = [t.parameters[1] for t in ty]
     s1 = Set(Symbol(t) for t in ty)
     s2 = Set(keys(lines_mapping))
     yettoimplement = setdiff(s2, s1)
@@ -115,4 +116,11 @@ end
     for i in [8, 16, 24, 32, 61, 80, 160, 212, 310, 311]
         @test sf(i)
     end
+end
+
+@testset "multi-file: 1 signal/format/file" begin
+    fname = "binformats.hea"
+    path = joinpath(DATA_DIR, fname)
+    header = rdheader(path)
+    _ = rdsignal(header,false)
 end

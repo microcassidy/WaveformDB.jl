@@ -2,6 +2,7 @@ using Dates
 const DEFAULT_FREQUENCY = 250.0f0
 const TIME_FORMAT = DateFormat("HH:MM:SS")
 const DATE_FORMAT = DateFormat("DD/MM/YYYY")
+
 @enum StorageFormat begin
     _8bit_first_difference = 8
     _16bit_twos_complement = 16
@@ -63,6 +64,10 @@ struct SignalSpecLine{T<:AbstractStorageFormat}
     description::String
 end
 
+const SingleSpecVector = Vector{SignalSpecLine}
+const MultiSpecVector = Vector{SingleSpecVector}
+const UnionSpecVector = Union{SingleSpecVector,MultiSpecVector}
+
 """
     filename(s::SignalSpecLine)
 a getter method for the filename field in the header. can either be used on:
@@ -71,6 +76,7 @@ a getter method for the filename field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 filename(s::SignalSpecLine) = getfield(s, :filename)
+filename(s::Vector{SignalSpecLine}) = getfield.(s, :filename)
 
 """
     format(s::SignalSpecLine)
@@ -80,6 +86,7 @@ a getter method for the format field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 format(s::SignalSpecLine) = getfield(s, :format)
+format(s::Vector{SignalSpecLine}) = getfield.(s, :format)
 
 """
     samples_per_frame(s::SignalSpecLine)
@@ -89,6 +96,7 @@ a getter method for the samples_per_frame field in the header. can either be use
 - Vector{SignalSpecLine}
 """
 samples_per_frame(s::SignalSpecLine) = getfield(s, :samples_per_frame)
+samples_per_frame(s::Vector{SignalSpecLine}) = getfield.(s, :samples_per_frame)
 
 """
     skew(s::SignalSpecLine)
@@ -161,6 +169,7 @@ a getter method for the initial_value field in the header. can either be used on
 - Vector{SignalSpecLine}
 """
 initial_value(s::SignalSpecLine) = getfield(s, :initial_value)
+initial_value(s::Vector{SignalSpecLine}) = getfield.(s, :initial_value)
 
 """
     checksum(s::SignalSpecLine)
@@ -218,7 +227,20 @@ Example header (100.hea in sample-data directory of repo)
 # Aldomet, Inderal
 ---------END OF FILE-------------
 """
-struct Header
+abstract type AbstractHeaderType end
+abstract type MultiRecordHeader <: AbstractHeaderType end
+abstract type SingleRecordHeader <: AbstractHeaderType end
+
+# Maybe this should be split out into the Multi/Single types
+# MultiRecord headers need to have consecutive file descriptors
+# i.e.
+# rec.dat ...
+# rec.dat ...
+# rec1.dat ...
+# rec.dat ... <- ILLEGAL as rec1.dat has appeared before
+# I think it i
+
+struct Header{S <: UnionSpecVector}
     record_name::String
     number_of_segments::Union{Nothing,UInt32}
     number_of_signals::UInt32
@@ -229,7 +251,7 @@ struct Header
     base_time::Union{Nothing,Time}
     base_date::Union{Nothing,Date}
     parentdir::String
-    signal_specs::Vector{SignalSpecLine}
+    signal_specs::S
 
     function Header(
         record_name,
@@ -242,9 +264,8 @@ struct Header
         base_time,
         base_date,
         parentdir,
-        signal_specs,
-    )
-        new(
+        signal_specs::T) where {T <: UnionSpecVector}
+        new{T}(
             record_name,
             number_of_segments,
             number_of_signals,
@@ -561,6 +582,27 @@ function rdheader(path)
     signal_spec_lines = Vector{SignalSpecLine}(undef, length(lines))
     for (idx, line) in enumerate(lines)
         signal_spec_lines[idx] = parse_signal_spec_line(line)
+    end
+
+    filenames = filename(signal_spec_lines)
+    uniquefilenames = unique(filenames)
+    #if there is only one filename in file it is a SingleSpecVec
+    #otherwise validation will need to happen
+    spec_type = length(uniquefilenames) == 1 ? SingleSpecVector : MultiSpecVector
+
+    if spec_type === MultiSpecVector
+        v = spec_type()
+        seen_filenames = Set()
+        for (i,ufn) in enumerate(uniquefilenames)
+            t = SingleSpecVector()
+            ufn ∈ seen_filenames && error("non-contiguous filenames specified")
+            while !isempty(signal_spec_lines) && filename(signal_spec_lines[1]) == ufn
+                push!(t, popfirst!(signal_spec_lines))
+            end
+            push!(v,t)
+            push!(seen_filenames,ufn)
+        end
+        signal_spec_lines = v
     end
 
     parentdir = splitdir(path)[1]

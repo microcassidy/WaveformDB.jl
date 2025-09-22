@@ -1,5 +1,8 @@
-function read_binary(io::IO, header::Header, ::WfdbFormat{format311})::Vector{Int32}
+function read_binary(io::IO,header::Header, F::WfdbFormat{T}) where {T <: AbstractStorageFormat}
     n_samples = sum(samples_per_frame(header) * samples_per_signal(header))
+    return read_binary(io, n_samples, F)
+end
+function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format311})::Vector{Int32}
     m = n_samples % 3 #number of samples that dont fit into a U32
     nchunk = Int64(floor(n_samples / 3))
     chunksizebytes = 4
@@ -36,14 +39,13 @@ function read_binary(io::IO, header::Header, ::WfdbFormat{format311})::Vector{In
     convert(Vector{Int32}, output)
 end
 
-function read_binary(io::IO, header::Header, ::WfdbFormat{format8})::Vector{Int32}
-    n_signals = nsignals(header)
-    n_samples = sum(samples_per_frame(header) * samples_per_signal(header))
+function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format8})::Vector{Int32}
+    n_signals = length(s)
     data = Vector{Int8}(undef, n_samples)
     output = Vector{Int16}(undef, n_samples)
     read!(io, data)
-    acc = zeros(Int16, n_signals)
-    acc .= initial_value(header)
+    # acc = zeros(Int16, n_signals)
+    acc = initial_value(s)
     blocks = Int(n_samples / n_signals)
     for j in 1:blocks
         for i in 1:n_signals
@@ -54,9 +56,7 @@ function read_binary(io::IO, header::Header, ::WfdbFormat{format8})::Vector{Int3
     convert(Vector{Int32}, output)
 end
 
-function read_binary(io::IO, header::Header, ::WfdbFormat{format16})::Vector{Int32}
-    n_signals = nsignals(header)
-    n_samples = sum(samples_per_frame(header) * samples_per_signal(header))
+function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format16})::Vector{Int32}
     bytes_per_sample = 2
     n_bytes = Int64(n_samples * bytes_per_sample)
     output = Vector{Int16}(undef, n_samples)
@@ -64,10 +64,9 @@ function read_binary(io::IO, header::Header, ::WfdbFormat{format16})::Vector{Int
     return convert(Vector{Int32}, output)
 end
 
-function read_binary(io::IO, header::Header, ::WfdbFormat{format24})::Vector{Int32}
-    nsamples = sum(samples_per_frame(header) * samples_per_signal(header))
+function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format24})::Vector{Int32}
     bytespersample = 3
-    nbytes = nsamples * bytespersample
+    nbytes = n_samples * bytespersample
 
     MAX_POS = Int32(2^(24 - 1) - 1)
     M = Int32(2^(24))
@@ -76,17 +75,16 @@ function read_binary(io::IO, header::Header, ::WfdbFormat{format24})::Vector{Int
     buffer = Vector{UInt8}(undef, nbytes)
     read!(io, buffer)
     buffer = convert(Vector{Int32}, buffer)
-    for n in 1:nsamples
+    for n in 1:n_samples
         @inbounds buffer[n] = twos_complement(
             buffer[3n - 2] + (buffer[3n - 1] << 8) + (buffer[3n] << 16)
         )
     end
-    resize!(buffer, nsamples)
+    resize!(buffer, n_samples)
     return buffer
 end
 
-function read_binary(io::IO, header::Header, ::WfdbFormat{format310})::Vector{Int32}
-    n_samples = sum(samples_per_frame(header) * samples_per_signal(header))
+function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format310})::Vector{Int32}
 
     N = Int64(floor(n_samples / 3))
     m = n_samples % 3 #processing 3 samples per iteration
@@ -128,8 +126,7 @@ function read_binary(io::IO, header::Header, ::WfdbFormat{format310})::Vector{In
     convert(Vector{Int32}, output)
 end
 
-function read_binary(io::IO, header::Header, ::WfdbFormat{format160})::Vector{Int32}
-    n_samples = sum(samples_per_frame(header) * samples_per_signal(header))
+function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format160})::Vector{Int32}
     data = Vector{UInt16}(undef, n_samples)
     read!(io, data)
     data = convert(Vector{Int32}, data)
@@ -139,8 +136,7 @@ function read_binary(io::IO, header::Header, ::WfdbFormat{format160})::Vector{In
     return data
 end
 
-function read_binary(io::IO, header::Header, ::WfdbFormat{format80})::Vector{Int32}
-    n_samples = sum(samples_per_frame(header) * samples_per_signal(header))
+function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format80})::Vector{Int32}
     data = convert(Vector{Int32}, read(io, n_samples; all=false))
     for idx in eachindex(data)
         @inbounds data[idx] -= Int32(128)
@@ -148,9 +144,7 @@ function read_binary(io::IO, header::Header, ::WfdbFormat{format80})::Vector{Int
     return data
 end
 
-function read_binary(io::IO, header::Header, ::WfdbFormat{format61})::Vector{Int32}
-    n_signals = nsignals(header)
-    n_samples = sum(samples_per_frame(header) * samples_per_signal(header))
+function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format61})::Vector{Int32}
     bytes_per_sample = 2
     n_bytes = Int64(n_samples * bytes_per_sample)
     output = Vector{Int16}(undef, n_samples)
@@ -158,9 +152,7 @@ function read_binary(io::IO, header::Header, ::WfdbFormat{format61})::Vector{Int
     return bswap.(output)
 end
 
-function read_binary(io::IO, header::Header, ::WfdbFormat{format32})::Vector{Int32}
-    n_signals = nsignals(header)
-    n_samples = sum(samples_per_frame(header) * samples_per_signal(header))
+function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format32})::Vector{Int32}
     bytes_per_sample = 4
     n_bytes = Int64(n_samples * bytes_per_sample)
     output = Vector{Int32}(undef, n_samples)
@@ -168,8 +160,7 @@ function read_binary(io::IO, header::Header, ::WfdbFormat{format32})::Vector{Int
     return output
 end
 
-function read_binary(io::IO, header::Header, ::WfdbFormat{format212})
-    n_samples = sum(samples_per_frame(header) * samples_per_signal(header))
+function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format212})
     n_bytes = Int64(ceil(n_samples * 3//2))
     true_bytes = n_bytes
     m = n_samples % 2
