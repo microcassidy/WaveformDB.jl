@@ -29,10 +29,8 @@ end
 
 @testset "writers" begin
     mt = methods(WaveformDB.read_binary)
-    # fmts = [m.sig.types[end] for m in mt] |> filter(x -> x !== WaveformDB.WfdbFormat)
-    # fmts = [t.parameters[1] for t in fmts]
     writertest = setup_writer_tests(ty)
-    for fmt in fmts
+    for fmt in ty
         @testset "$fmt" begin
             writertest(fmt)
         end

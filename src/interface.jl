@@ -11,29 +11,33 @@ physical - optional (defaults to true)
 """
 rdsignal(header::Header) = rdsignal(header::Header, true)
 
-function rdsignal(header::Header, physical::Bool)
+function rdsignal(header::Header{T}, physical::Bool) where T <: UnionSpecVector
     dir = parentdir(header)
 
     #samples per frame is part of the spec line and samples per signal is part of
     #the Header line
     specline = signalspecline(header)
-    n_samples = sum(samples_per_frame(specline) * samples_per_signal(header))
+    samples = _process(dir, signalspecline(header),samples_per_signal(header))
 
-    @info n_samples
-
-    samples = _process(dir, signalspecline(header),n_samples)
-
-    _checksum = checksum(samples, header)
+    if T === SingleSpecVector
+        _checksum = checksum(samples, header)
+    else
+        _checksum = nothing
+    end
     if physical
         samples = Float16.(samples) #TODO: change to convert and check out type of checksum...
         dac!(samples, header)
     end
     return _checksum, reshape(samples, nsignals(header), :)
 end
+function _process(dir::String, v::MultiSpecVector,samplespersignal::UInt32)::Vector{Vector{Int32}}
+    v .|> x-> _process(dir, x,samplespersignal)
+end
 
-function _process(dir::String, v::SingleSpecVector,n_samples::UInt64)::Vector{Int32}
+function _process(dir::String, v::SingleSpecVector,samplespersignal::UInt32)::Vector{Int32}
     #TODO: validation step for format. There shouldn't be multi-format in a single file
     fmt = format(v)[1]
+    n_samples = sum(samples_per_frame(v) * samplespersignal)
     fname = filename(v)[1]
     fname = joinpath(dir, fname)
     extension = get_extension_symbol(fname)

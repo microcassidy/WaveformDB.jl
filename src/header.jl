@@ -179,6 +179,7 @@ a getter method for the checksum field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 checksum(s::SignalSpecLine) = getfield(s, :checksum)
+checksum(s::Vector{SignalSpecLine}) = getfield.(s, :checksum)
 
 """
     block_size(s::SignalSpecLine)
