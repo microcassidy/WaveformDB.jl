@@ -2,7 +2,8 @@ module WaveformDBBench
 using BenchmarkTools
 const DATA_DIR = joinpath(@__DIR__, "..", "..", "sample-data")
 using WaveformDB
-using WaveformDB: rdsignal
+using WaveformDB: rdsignal,SingleSpecVector,MultiSpecVector
+
 
 BenchmarkTools.DEFAULT_PARAMETERS.seconds = 1.0
 BenchmarkTools.DEFAULT_PARAMETERS.samples = 10000
@@ -21,10 +22,6 @@ export runner
 runner() = run(WaveformDBBench.SUITE; evals=100, seconds=5, samples=1000)
 export displayresults
 function displayresults()
-    # results = runner() 
-    # display(results)
-    # return
-    # return
     for (subj, ks) in runner()
         print("$subj:\n")
         for (fun_name, result) in pairs(ks)

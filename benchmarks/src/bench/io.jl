@@ -1,13 +1,4 @@
 io_group = addgroup!(SUITE, "io")
-# io_group["find_contours"] = @benchmarkable find_contours!(x) setup=(x=copy($X))
-# io_group["draw_contours"] = @benchmarkable draw_contours!(image,$color,C) setup = ( image=copy($image), C=copy($C) )
-
-#filter to the types with a formatxx subtype
-function implementedtypes()
-    mt = methods(WaveformDB.read_binary)
-    ty = [m.sig.types[end] for m in mt] |> filter(x->x !== WaveformDB.WfdbFormat)
-    return t[t.parameters[1] for t in ty]
-end
 function io_headersetup()
     bindata_recordline = "binformats 10 200 499"
     spec_lines = [
@@ -35,9 +26,10 @@ function io_headersetup()
         recordline[:base_time],
         recordline[:base_date],
         DATA_DIR,
-        sl,
+        SingleSpecVector[sl],
     )
-    return [H([s]) for s in spec_lines]
+    return [H(SingleSpecVector([s])) for s in spec_lines]
+
 end
 
 const lines_mapping = Dict([
@@ -52,11 +44,7 @@ const lines_mapping = Dict([
     :format24 => 9,
     :format32 => 10,
 ])
-
 headers = io_headersetup()
-# for (k,v) in lines_mapping
-#     h[Symbol(k)]
-# end
 for (k, l) in lines_mapping
     h = headers[l]
     io_group[k] = @benchmarkable rdsignal(header, false) setup = (header = $h)
