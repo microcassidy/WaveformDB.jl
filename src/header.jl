@@ -76,7 +76,7 @@ a getter method for the filename field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 filename(s::SignalSpecLine) = getfield(s, :filename)
-filename(s::Vector{SignalSpecLine}) = getfield.(s, :filename)
+filename(xs::Vector{SignalSpecLine}) = [getfield(x, :filename) for x in xs]
 
 """
     format(s::SignalSpecLine)
@@ -86,7 +86,7 @@ a getter method for the format field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 format(s::SignalSpecLine) = getfield(s, :format)
-format(s::Vector{SignalSpecLine}) = getfield.(s, :format)
+format(xs::Vector{SignalSpecLine}) = [getfield(x , :format) for x in xs]
 
 """
     samples_per_frame(s::SignalSpecLine)
@@ -96,16 +96,17 @@ a getter method for the samples_per_frame field in the header. can either be use
 - Vector{SignalSpecLine}
 """
 samples_per_frame(s::SignalSpecLine) = getfield(s, :samples_per_frame)
-samples_per_frame(s::Vector{SignalSpecLine}) = getfield.(s, :samples_per_frame)
+samples_per_frame(xs::Vector{SignalSpecLine}) = [getfield(x, :samples_per_frame) for x in xs]
 
 """
     skew(s::SignalSpecLine)
-a getter method for the skew field in the header. can either be used on:
+a getter method for the skew field in the header. can either be used on: #
 - Header
 - SignalSpecLine
 - Vector{SignalSpecLine}
 """
 skew(s::SignalSpecLine) = getfield(s, :skew)
+skew(xs::Vector{SignalSpecLine}) =[getfield(x, :skew) for x in xs]
 
 """
     byte_offset(s::SignalSpecLine)
@@ -115,6 +116,7 @@ a getter method for the byte_offset field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 byte_offset(s::SignalSpecLine) = getfield(s, :byte_offset)
+byte_offset(xs::Vector{SignalSpecLine}) =[getfield(x, :byte_offset) for x in xs]
 
 """
     adc_gain(s::SignalSpecLine)
@@ -124,6 +126,7 @@ a getter method for the adc_gain field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 adc_gain(s::SignalSpecLine) = getfield(s, :adc_gain)
+adc_gain(xs::Vector{SignalSpecLine}) =[getfield(x, :adc_gain) for x in xs]
 
 """
     baseline(s::SignalSpecLine)
@@ -133,6 +136,7 @@ a getter method for the baseline field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 baseline(s::SignalSpecLine) = getfield(s, :baseline)
+baseline(xs::Vector{SignalSpecLine}) =[getfield(x, :baseline) for x in xs]
 
 """
     units(s::SignalSpecLine)
@@ -142,6 +146,7 @@ a getter method for the units field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 units(s::SignalSpecLine) = getfield(s, :units)
+units(xs::Vector{SignalSpecLine}) =[getfield(x, :units) for x in xs]
 
 """
     adc_resolution(s::SignalSpecLine)
@@ -151,6 +156,7 @@ a getter method for the adc_resolution field in the header. can either be used o
 - Vector{SignalSpecLine}
 """
 adc_resolution(s::SignalSpecLine) = getfield(s, :adc_resolution)
+adc_resolution(xs::Vector{SignalSpecLine}) =[getfield(x, :adc_resolution) for x in xs]
 
 """
     adc_zero(s::SignalSpecLine)
@@ -160,6 +166,7 @@ a getter method for the adc_zero field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 adc_zero(s::SignalSpecLine) = getfield(s, :adc_zero)
+adc_zero(xs::Vector{SignalSpecLine}) =[getfield(x, :adc_zero) for x in xs]
 
 """
     initial_value(s::SignalSpecLine)
@@ -169,7 +176,7 @@ a getter method for the initial_value field in the header. can either be used on
 - Vector{SignalSpecLine}
 """
 initial_value(s::SignalSpecLine) = getfield(s, :initial_value)
-initial_value(s::Vector{SignalSpecLine}) = getfield.(s, :initial_value)
+initial_value(xs::Vector{SignalSpecLine}) = [getfield(x, :initial_value) for x in xs]
 
 """
     checksum(s::SignalSpecLine)
@@ -179,7 +186,7 @@ a getter method for the checksum field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 checksum(s::SignalSpecLine) = getfield(s, :checksum)
-checksum(s::Vector{SignalSpecLine}) = getfield.(s, :checksum)
+checksum(xs::Vector{SignalSpecLine}) =[getfield(x, :checksum) for x in xs]
 
 """
     block_size(s::SignalSpecLine)
@@ -189,6 +196,7 @@ a getter method for the block_size field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 block_size(s::SignalSpecLine) = getfield(s, :block_size)
+block_size(xs::Vector{SignalSpecLine}) = [getfield(x, :block_size) for x in xs]
 
 """
     description(s::SignalSpecLine)
@@ -198,6 +206,7 @@ a getter method for the description field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 description(s::SignalSpecLine) = getfield(s, :description)
+description(xs::Vector{SignalSpecLine}) =[getfield(x, :description) for x in xs]
 
 #TODO: document
 """
@@ -363,14 +372,14 @@ byte_offset(h::Header) = h.signal_specs .|> byte_offset
     checksum(h::Header,signal)  # *calculates* the checksum of a decoded symbol
 """
 function checksum end
-checksum(h::Header) = h.signal_specs .|> checksum
-description(h::Header) = h.signal_specs .|> description
-filename(h::Header) = h.signal_specs .|> filename
-format(h::Header) = h.signal_specs .|> format
-initial_value(h::Header) = h.signal_specs .|> initial_value
-samples_per_frame(h::Header) = h.signal_specs .|> samples_per_frame
-skew(h::Header) = h.signal_specs .|> skew
-units(h::Header) = h.signal_specs .|> units
+checksum(h::Header) = h.signal_specs |> checksum
+description(h::Header) = h.signal_specs |> description
+filename(h::Header) = h.signal_specs |> filename
+format(h::Header) = h.signal_specs |> format
+initial_value(h::Header) = h.signal_specs |> initial_value
+samples_per_frame(h::Header) = h.signal_specs |> samples_per_frame
+skew(h::Header) = h.signal_specs |> skew
+units(h::Header) = h.signal_specs |> units
 
 """
     nsignals(h::Header)
@@ -379,9 +388,7 @@ number of signal specs present in a header
 nsignals(h::Header) = length(h.signal_specs)
 
 @inline function _parse(T, v)
-    if T === String && v isa SubString
-        return String(v)
-    end
+    T === String && v isa SubString && return String(v)
     I = T
     if T isa Union
         I = I.a === Nothing ? I.b : I.a

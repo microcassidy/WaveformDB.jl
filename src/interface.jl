@@ -10,7 +10,6 @@ physical - optional (defaults to true)
         field (False).
 """
 rdsignal(header::Header) = rdsignal(header::Header, true)
-
 function rdsignal(header::Header{T}, physical::Bool) where T <: UnionSpecVector
     dir = parentdir(header)
 
@@ -30,6 +29,7 @@ function rdsignal(header::Header{T}, physical::Bool) where T <: UnionSpecVector
     end
     return _checksum, reshape(samples, nsignals(header), :)
 end
+
 function _process(dir::String, v::MultiSpecVector,samplespersignal::UInt32)::Vector{Vector{Int32}}
     v .|> x-> _process(dir, x,samplespersignal)
 end
@@ -57,7 +57,6 @@ function _process(dir::String, v::SingleSpecVector,samplespersignal::UInt32)::Ve
 end
 
 function read_matlab(fname::String)::Vector{Int32}
-
     samples = matread(fname) |> values |> collect
     if length(samples) > 1
         error("more than one matrix in .mat file")
