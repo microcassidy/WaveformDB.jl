@@ -1,6 +1,6 @@
-/Manifest*.toml
 .nvim.lua
 notes.md
 .wfdb-spec
 /.DS_Store
 /.benchdata/
+**/Manifest.toml

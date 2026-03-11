@@ -19,7 +19,7 @@ end
 Base.size(s::WFDBRecord) = size(s.signal)
 Base.length(s::WFDBRecord) = length(s.signal)
 Base.getindex(s::WFDBRecord,i::Int) = getindex(s.signal,i)
-Base.getindex(s::WFDBRecord,I::Vararg{Int,2}) = getindex(s.signal,I)
+Base.getindex(s::WFDBRecord,I::Vararg{Int,2}) = s.signal[I...]
 Base.IndexStyle(::WFDBRecord) = IndexLinear()
 Base.convert(::Type{Vector{T}},s::WFDBRecord) where {T <: Number} = convert(Vector{T}, vec(s.signal))
 # Base.Vector{U}(s::WFDBRecord{T}) where {T<:Real,U<:Real} = Vector{U}(s.signal)

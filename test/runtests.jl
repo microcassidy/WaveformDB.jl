@@ -69,6 +69,6 @@ function H(sl::Vector{SignalSpecLine})
 end
 
 @testset "WaveformDB.jl" begin
-    # include("test_readers.jl")
+    include("test_readers.jl")
     include("test_writers.jl")
 end

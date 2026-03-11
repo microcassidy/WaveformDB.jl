@@ -29,7 +29,6 @@ function write_binary(io::IO, samples::WFDBRecord{Int64}, ::WfdbFormat{format24}
     output = Vector{UInt8}(undef, length(samples) * 3)
 
     for i in eachindex(samples)
-        @info i
         v = samples[i]
         if v < 0
             v += 2^24

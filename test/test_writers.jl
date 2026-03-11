@@ -14,7 +14,6 @@ function setup_writer_tests(fmts)
         fmt = format(header)[1]
 
         samples = rdsignal(header, false)
-        @info typeof(samples)
 
         fname = unique(filename(header))
         path = joinpath(parentdir(header), fname[1])
