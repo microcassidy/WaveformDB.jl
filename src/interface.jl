@@ -9,6 +9,36 @@ physical - optional (defaults to true)
         `p_signal` field (True), or digital units in the `d_signal`
         field (False).
 """
+struct Signal{T} <: AbstractMatrix{T where T<:Real}
+    header::Header{<:UnionSpecVector}
+    signal::Matrix{T}
+    Signal(h::Header,M::AbstractMatrix{T}) where {T<:Real} = new{T}(h,M)
+end
+
+for n in fieldnames(Header)
+    expr = :($n(s::Signal) = s.header |> $n)
+    eval(expr)
+end
+
+
+
+
+
+Base.size(s::Signal) = size(s.signal)
+Base.getindex(s::Signal,i::Int) = s.signal[i]
+Base.getindex(s::Signal,I::Vararg{Int,2}) = s.signal[I[1],I[2]]
+
+function rdsignal2(header_path::String,physical::Bool=true)::Signal
+    header = rdheader(header_path)
+    cs,s = rdsignal(header,physical)
+    return Signal(header,s)
+end
+
+header(s::Signal) = getfield(s,:header)
+
+
+
+
 rdsignal(header::Header) = rdsignal(header::Header, true)
 function rdsignal(header::Header{T}, physical::Bool) where T <: UnionSpecVector
     dir = parentdir(header)
@@ -24,7 +54,7 @@ function rdsignal(header::Header{T}, physical::Bool) where T <: UnionSpecVector
         _checksum = nothing
     end
     if physical
-        samples = Float16.(samples) #TODO: change to convert and check out type of checksum...
+        samples = float(samples) #TODO: change to convert and check out type of checksum...
         dac!(samples, header)
     end
     return _checksum, reshape(samples, nsignals(header), :)
