@@ -13,8 +13,12 @@ using DelimitedFiles
     target_path = joinpath(DATA_DIR, "100.csv")
     target = readdlm(target_path, ',', Float32, '\n'; skipstart=1)
     # labels, target = read_delimited(target_path, ",", true, Float16)
-    _checksum, signal = rdsignal(header)
-    @test all(mod.(checksum(header) - _checksum, 65536) .== 0)
+    signal = rdsignal(header)
+
+    @test signal.checksum_calculated == true
+    @test WaveformDB.validate_checksum(signal) === nothing
+
+    # @test all(mod.(checksum(header) - _checksum, 65536) .== 0)
     @test signal ≈ target'
 end
 
@@ -23,8 +27,10 @@ end
     path = joinpath(DATA_DIR, fname)
     header = rdheader(path)
     @test nsignals(header) == 4
-    _checksum, signal = rdsignal(header)
-    @test all(mod.(checksum(header) - _checksum, 65536) .== 0)
+    signal = rdsignal(header)
+    @test signal.checksum_calculated == true
+    @test WaveformDB.validate_checksum(signal) === nothing
+    # @test all(mod.(checksum(header) - _checksum, 65536) .== 0)
     @warn "only tested against checksum"
 end
 
@@ -45,7 +51,7 @@ function test_fmt24()
     fname = "n8_evoked_raw_95_F1_R9.hea"
     path = joinpath(DATA_DIR, fname)
     header = rdheader(path)
-    _checksum, signal = rdsignal(header, false)
+    signal = rdsignal(header, false)
     signal ≈ target
 end
 @testset "format24" begin
@@ -65,7 +71,7 @@ end
     header = rdheader(path)
     Fs = sampling_frequency(header)
     target = read_target_record("record-1c", Int16)
-    _checksum, signal = rdsignal(header, false)
+    signal = rdsignal(header, false)
     signalv = @view signal[1:2, (Integer(80 * Fs) + 1):end]
     @test signalv ≈ target
 end
@@ -74,7 +80,7 @@ function test_T(T::Type{U}, target::Matrix{Int32}) where {U<:AbstractStorageForm
     idx = lines_mapping[Symbol(T)]
     v = Vector{SignalSpecLine}([WaveformDB.parse_signal_spec_line(spec_lines[idx])])
     header = H(v)
-    _checksum, signal = rdsignal(header, false)
+    signal = rdsignal(header, false)
     t = @view target[idx, :]
     signalv = @view signal[1, :]
     @assert signalv ≈ t signalv[1:4], t[1:4]
@@ -122,5 +128,5 @@ end
     fname = "binformats.hea"
     path = joinpath(DATA_DIR, fname)
     header = rdheader(path)
-    _ = rdsignal(header,false)
+    _ = rdsignal(header,false;debug=true)
 end

@@ -1,6 +1,7 @@
-function write_binary(io::IO, header::Header, samples::Vector{Int32}, ::WfdbFormat{format8})
-    n_signals = nsignals(header) #do I even care about this anymore?
-    n_samples = length(samples)
+# function write_binary(io::IO, header::Header, samples::WFDBRecord{Int64}, ::WfdbFormat{format8})
+function write_binary(io::IO, signal::WFDBRecord{Int64},::WfdbFormat{format8})
+    n_signals = nsignals(signal) #do I even care about this anymore?
+    n_samples = length(signal)
     output = Vector{UInt8}(undef, n_samples)
 
     # x₁ = y₁ + v₁, x is the converted signal, y is the stream of data on disk, v is the initial_value in the header
@@ -8,30 +9,27 @@ function write_binary(io::IO, header::Header, samples::Vector{Int32}, ::WfdbForm
     # <=> y_k = x_k - x_k - 1
     #the samples are interleaved so we will need to look back by the number of samples
 
-    initvalues = initial_value(header)
+    initvalues = initial_value(signal)
     output = Vector{Int8}(undef, n_samples)
     for i in n_samples:-1:(n_signals + 1)
-        output[i] = samples[i] - samples[i - 1]
+        output[i] = signal[i] - signal[i - 1]
     end
 
     for i in 1:n_signals
-        output[i] = samples[i] - initvalues[i]
+        output[i] = signal[i] - initvalues[i]
     end
 
     write(io, output)
 end
 
-function write_binary(
-    io::IO, header::Header, samples::Vector{Int32}, ::WfdbFormat{format16}
-)
+function write_binary(io::IO, samples::WFDBRecord{Int64}, ::WfdbFormat{format16})
     write(io, convert(Vector{Int16}, samples))
 end
-function write_binary(
-    io::IO, header::Header, samples::Vector{Int32}, ::WfdbFormat{format24}
-)
+function write_binary(io::IO, samples::WFDBRecord{Int64}, ::WfdbFormat{format24})
     output = Vector{UInt8}(undef, length(samples) * 3)
 
     for i in eachindex(samples)
+        @info i
         v = samples[i]
         if v < 0
             v += 2^24
@@ -44,28 +42,28 @@ function write_binary(
     write(io, output)
 end
 function write_binary(
-    io::IO, header::Header, samples::Vector{Int32}, ::WfdbFormat{format32}
+    io::IO, samples::WFDBRecord{Int64}, ::WfdbFormat{format32}
 )
-    write(io, samples)
+    write(io, convert(Vector{Int32},samples))
 end
 function write_binary(
-    io::IO, header::Header, samples::Vector{Int32}, ::WfdbFormat{format61}
+    io::IO, samples::WFDBRecord{Int64}, ::WfdbFormat{format61}
 )
     write(io, bswap.(convert(Vector{Int16}, samples)))
 end
 
 function write_binary(
-    io::IO, header::Header, samples::Vector{Int32}, ::WfdbFormat{format80}
+    io::IO, samples::WFDBRecord{Int64}, ::WfdbFormat{format80}
 )
-    output = samples
+    output = copy(vec(samples))
     for i in eachindex(output)
-        output[i] += Int32(128)
+        output[i] += Int64(128)
     end
     write(io, convert(Vector{UInt8}, output))
 end
 
 function write_binary(
-    io::IO, header::Header, samples::Vector{Int32}, ::WfdbFormat{format160}
+    io::IO, samples::WFDBRecord{Int64}, ::WfdbFormat{format160}
 )
     output = Vector{UInt16}(undef, length(samples))
 
@@ -75,9 +73,10 @@ function write_binary(
     write(io, output)
 end
 function write_binary(
-    io::IO, header::Header, samples::Vector{Int32}, ::WfdbFormat{format212}
+    io::IO, s::WFDBRecord{Int64}, ::WfdbFormat{format212}
 )
-    n_samples = length(samples)
+    n_samples = length(s)
+    samples = copy(vec(s))
     buffer_length = n_samples
     r = n_samples % 2
     if r == 1
@@ -90,7 +89,7 @@ function write_binary(
     n_bytes_actual = Int64(ceil(1.5 * n_samples))
 
     output = Vector{UInt8}(undef, n_bytes)
-    @inline conv(x::Int32) = x < 0 ? x + 4096 : x
+    @inline conv(x::Int64) = x < 0 ? x + 4096 : x
     for i in 1:Int64(buffer_length / 2)
         v1 = samples[2i - 1] |> conv |> UInt16
         v2 = samples[2i] |> conv |> UInt16
@@ -107,9 +106,10 @@ function write_binary(
 end
 
 function write_binary(
-    io::IO, header::Header, samples::Vector{Int32}, ::WfdbFormat{format310}
+    io::IO, s::WFDBRecord{Int64}, ::WfdbFormat{format310}
 )
-    convert(x::Int32) = x < 0 ? x + 1024 : x
+    samples = copy(vec(s))
+    convert(x::Int64) = x < 0 ? x + 1024 : x
     nsamples = length(samples)
     buffer_length = nsamples
     m = nsamples % 3
@@ -148,9 +148,10 @@ function write_binary(
 end
 
 function write_binary(
-    io::IO, header::Header, samples::Vector{Int32}, ::WfdbFormat{format311}
+    io::IO, s::WFDBRecord{Int64}, ::WfdbFormat{format311}
 )
-    @inline _convert(x::Int32) = x < 0 ? x + 1024 : x
+    samples = copy(vec(s))
+    @inline _convert(x::Int64) = x < 0 ? x + 1024 : x
     nsamples = length(samples)
     buffer_length = nsamples
     m = nsamples % 3
@@ -164,7 +165,8 @@ function write_binary(
     n_bytes_actual = Int64(ceil(nsamples * 4 / 3))
     output = Vector{UInt8}(undef, n_bytes)
 
-    for i in 1:Int64(buffer_length / 3)
+    # for i in 1:Int64(buffer_length / 3)
+    for i in 1:div(buffer_length,3)
         val =
             _convert(samples[3i - 2]) +
             (_convert(samples[3i - 1]) << 10) +

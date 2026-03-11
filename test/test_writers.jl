@@ -13,12 +13,14 @@ function setup_writer_tests(fmts)
         header = D[fmt]
         fmt = format(header)[1]
 
-        checksum, samples = rdsignal(header, false)
+        samples = rdsignal(header, false)
+        @info typeof(samples)
+
         fname = unique(filename(header))
         path = joinpath(parentdir(header), fname[1])
         expectations = read(path)
         io = IOBuffer()
-        write_binary(io, header, vec(samples), fmt)
+        write_binary(io, samples, fmt)
         seekstart(io)
         reality = read(io)
         close(io)

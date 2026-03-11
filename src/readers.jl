@@ -149,7 +149,7 @@ function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat
     n_bytes = Int64(n_samples * bytes_per_sample)
     output = Vector{Int16}(undef, n_samples)
     read!(io, output)
-    return bswap.(output)
+    return convert(Vector{Int64},bswap.(output))
 end
 
 function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat{format32})::Vector{Int64}
