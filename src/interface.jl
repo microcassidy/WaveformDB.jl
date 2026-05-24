@@ -99,15 +99,22 @@ end
 
 # function _process(dir::String, v::MultiSpecVector,samplespersignal::UInt32)::Vector{Vector{Int64}}
 function _process(dir::String, v::MultiSpecVector,samplespersignal::UInt32)::Vector{Int64}
-    N = length(v)
+    N = length.(v) |> sum
     out = Vector{Int64}(undef,N*samplespersignal)
     @debug "out shape:$(size(out))"
     idxs = 0:length(out)-1
     o = ones(Int64,samplespersignal)
+
+
+    out = reshape(out,N,:)
+
+    offset = 0
     for (i,vi) in enumerate(v)
-        out[i:N:length(out)] = _process(dir, vi,samplespersignal)
+        ov = view(out,offset+1:offset+length(vi),:)
+        ov = _process(dir, vi,samplespersignal)
+        offset += length(vi)
     end
-    return out
+    reshape(out,:)
     # return reshape(out,length(out))
     # v .|> x-> _process(dir, x,samplespersignal) |> xs->vec(reduce(hcat,xs)')
 end

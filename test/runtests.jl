@@ -72,5 +72,5 @@ end
     include("test_readers.jl")
     include("test_writers.jl")
 
-    # _ = WaveformDB.rdrecord("/Users/michael/research/mres/masters_thesis/data/datasets/ptb-diagnostic-ecg-database-1.0.0/patient227/s0450_re.hea")
+    _ = WaveformDB.rdrecord("/Users/michael/research/mres/masters_thesis/data/datasets/ptb-diagnostic-ecg-database-1.0.0/patient227/s0450_re.hea")
 end
