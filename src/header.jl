@@ -97,6 +97,7 @@ a getter method for the samples_per_frame field in the header. can either be use
 """
 samples_per_frame(s::SignalSpecLine) = getfield(s, :samples_per_frame)
 samples_per_frame(xs::Vector{SignalSpecLine}) = [getfield(x, :samples_per_frame) for x in xs]
+samples_per_frame(xs::Vector{Vector{SignalSpecLine}}) = mapfoldl(samples_per_frame,vcat,xs)
 
 """
     skew(s::SignalSpecLine)
@@ -126,7 +127,8 @@ a getter method for the adc_gain field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 adc_gain(s::SignalSpecLine) = getfield(s, :adc_gain)
-adc_gain(xs::Vector{SignalSpecLine}) =[getfield(x, :adc_gain) for x in xs]
+adc_gain(xs::Vector{SignalSpecLine}) = (adc_gain(x) for x in xs) |> flatten |> collect
+adc_gain(xs::Vector{Vector{SignalSpecLine}}) = (adx_gain(x) for x in xs) |> flatten |> collect
 
 """
     baseline(s::SignalSpecLine)
@@ -136,7 +138,8 @@ a getter method for the baseline field in the header. can either be used on:
 - Vector{SignalSpecLine}
 """
 baseline(s::SignalSpecLine) = getfield(s, :baseline)
-baseline(xs::Vector{SignalSpecLine}) =[getfield(x, :baseline) for x in xs]
+baseline(xs::Vector{SignalSpecLine}) = (baseline(x) for x in xs ) |> flatten |> collect
+baseline(xs::Vector{Vector{SignalSpecLine}}) = ( baseline(x) for x in xs) |> flatten |> collect
 
 """
     units(s::SignalSpecLine)
@@ -177,6 +180,7 @@ a getter method for the initial_value field in the header. can either be used on
 """
 initial_value(s::SignalSpecLine) = getfield(s, :initial_value)
 initial_value(xs::Vector{SignalSpecLine}) = [getfield(x, :initial_value) for x in xs]
+initial_value(xs::Vector{Vector{SignalSpecLine}}) = mapfoldl(initial_value,vcat,xs)
 
 """
     checksum(s::SignalSpecLine)

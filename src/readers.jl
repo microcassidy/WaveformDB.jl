@@ -194,10 +194,10 @@ function read_binary(io::IO,s::SingleSpecVector, n_samples::UInt64, ::WfdbFormat
 end
 
 function dac!(samples::AbstractVector{T}, h::Header) where {T <: Float64}
-    baselines = baseline(h)
-    initialvalues = initial_value(h)
+    baselines = foldl(vcat,baseline(h))
+    initialvalues = foldl(vcat,initial_value(h))
 
-    adcgains = adc_gain(h)
+    adcgains = foldl(vcat,adc_gain(h))
     _samples_per_frame = samples_per_frame(h)
     _nsignals = nsignals(h)
 
@@ -207,9 +207,9 @@ function dac!(samples::AbstractVector{T}, h::Header) where {T <: Float64}
     nrow, ncol = size(linearindex)
     for j in 1:ncol
         for i in 1:nrow
-            @inbounds idx = linearindex[i, j]
-            @inbounds samples[idx] -= baselines[i]
-            @inbounds samples[idx] /= adcgains[i]
+            idx = linearindex[i, j]
+            samples[idx] -= baselines[i]
+            samples[idx] /= adcgains[i]
         end
     end
 end

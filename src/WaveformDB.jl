@@ -23,4 +23,5 @@ julia> rdrecord("foo.hea")
 module WaveformDB
 using MAT: matread
 include("packagedef.jl")
+using Base.Iterators:flatten
 end

@@ -122,7 +122,7 @@ function _process(dir::String, v::SingleSpecVector,samplespersignal::UInt32)::Ve
     extension = get_extension_symbol(fname)
 
     uniquespf = samples_per_frame(v) |> unique
-    uniform = length(uniquespf) == 1 & uniquespf[1] == 1
+    uniform = (length(uniquespf) == 1 && uniquespf[1] == 1)
     !uniform && error("non-unity frame sizes not supported")
 
     extension == :matlab && return read_matlab(fname)
