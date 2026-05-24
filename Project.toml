@@ -1,6 +1,6 @@
 name = "WaveformDB"
 uuid = "689c0ef7-57ec-4965-8e44-b481393393ef"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Michael Cassidy"]
 
 [deps]
