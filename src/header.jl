@@ -211,6 +211,7 @@ a getter method for the description field in the header. can either be used on:
 """
 description(s::SignalSpecLine) = getfield(s, :description)
 description(xs::Vector{SignalSpecLine}) =[getfield(x, :description) for x in xs]
+description(xs::Vector{Vector{SignalSpecLine}}) = foldl(vcat,[description(x) for x in xs])
 
 #TODO: document
 """
@@ -389,7 +390,10 @@ units(h::Header) = h.signal_specs |> units
     nsignals(h::Header)
 number of signal specs present in a header
 """
-nsignals(h::Header) = length(h.signal_specs)
+function nsignals(h::Header)
+    typeof(h.signal_specs) === Vector{SignalSpecLine} && return length(h.signal_specs)
+    h.signal_specs .|> length |> sum
+end
 
 @inline function _parse(T, v)
     T === String && v isa SubString && return String(v)

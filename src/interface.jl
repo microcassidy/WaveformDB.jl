@@ -93,7 +93,6 @@ function rdsignal(header::Header{T}, physical::Bool;debug::Bool=false)::WFDBReco
         samples = float(samples) #TODO: change to convert and check out type of checksum...
         dac!(samples, header)
     end
-
     return checksum_calculated ? WFDBRecord(header,reshape(samples, nsignals(header), :), _checksum) : WFDBRecord(header,reshape(samples, nsignals(header), :))
 end
 
@@ -110,8 +109,7 @@ function _process(dir::String, v::MultiSpecVector,samplespersignal::UInt32)::Vec
 
     offset = 0
     for (i,vi) in enumerate(v)
-        ov = view(out,offset+1:offset+length(vi),:)
-        ov = _process(dir, vi,samplespersignal)
+        out[offset+begin:offset+length(vi),:] = _process(dir, vi,samplespersignal)
         offset += length(vi)
     end
     reshape(out,:)

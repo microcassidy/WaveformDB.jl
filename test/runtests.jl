@@ -71,6 +71,8 @@ end
 @testset "WaveformDB.jl" begin
     include("test_readers.jl")
     include("test_writers.jl")
-
-    _ = WaveformDB.rdrecord("/Users/michael/research/mres/masters_thesis/data/datasets/ptb-diagnostic-ecg-database-1.0.0/patient227/s0450_re.hea")
+@testset "multispec file" begin
+    WaveformDB.rdrecord("patient227/s0450_re.hea")
+    @test true
+end
 end
